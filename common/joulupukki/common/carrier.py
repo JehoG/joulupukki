@@ -25,6 +25,11 @@ class Carrier(object):
         self.parameters = pika.ConnectionParameters(host=self.server,
                                                     port=self.port,
                                                     )
+        self.connection = None
+        self.channel = None
+        self.connect()
+
+    def connect(self):
         self.connection = pika.BlockingConnection(self.parameters)
         self.channel = self.connection.channel()
 
@@ -53,9 +58,17 @@ class Carrier(object):
             build_data = json.loads(body)
             self.channel.basic_ack(method_frame.delivery_tag)
         except Exception as exp:
-            # TODO
-            print(exp)
+            # TODO better error Handler
+            # Reconnect
+            try:
+                self.connect()
+                self.channel.queue_declare(queue='builds')
+            except Exception as exp:
+                print (exp)
+                return None
+            print (exp)
             return None
+
         if build_data is not None:
             build = Build(build_data)
             build.user = User.fetch(build_data['username'], sub_objects=False)
