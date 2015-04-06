@@ -161,7 +161,12 @@ class RpmPacker(Packer):
         # RUN
         self.logger.info("RPM Build starting")
         start_time = timeit.default_timer()
-        self.container = self.cli.create_container(self.container_tag, command=command, volumes=volumes)
+        try:
+            self.container = self.cli.create_container(self.container_tag, command=command, volumes=volumes)
+        except Exception as exp:
+            self.logger.error("Error launching docker container: %s", exp)
+            return False
+
         local_source_folder = os.path.join(self.folder, "sources")
         binds[local_source_folder] = {"bind": "/upstream", "ro": True}
         self.cli.start(self.container['Id'], binds=binds)
